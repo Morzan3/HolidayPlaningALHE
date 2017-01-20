@@ -4,9 +4,15 @@ import math
 import time
 import matplotlib.pyplot as plt
 
+import numpy as np
+import scipy.misc as smp
+
 
 NUMBER_OF_CITIES = 365
 NUMBER_OF_YEARS = 10
+
+
+
 
 fakeFactory = Factory.create()
 
@@ -180,6 +186,7 @@ class UrlopPlaner():
 
         current_point = (random_day, random_city)
         while not stop_condition(current_iteration):
+            self.history.append((current_point, current_iteration))
             neighbour = self.select_neighbour(current_point, sigma)
             qX = self.q(current_point, wi)
             qY = self.q(neighbour, wi)
@@ -309,3 +316,21 @@ def E():
         axisY.append(qmax)
     plt.plot(axisX, axisY, 'ro')
     plt.show()
+
+
+def draw_search_space():
+    # Create a 1024x1024x3 array of 8 bit unsigned integers
+    data = np.zeros( (NUMBER_OF_CITIES, 365, 3), dtype=np.uint8)
+    data.fill(255)
+    iterations = 100000.0;
+    urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(iterations), 0.3, 10.0)
+    history = urlopPlanes.history
+    for point, iteration in history:
+        day, city = point
+        city_idx = urlopPlanes.city_list.index(city)
+        data[day, city_idx] = [255.0*(iteration/iterations), 0, 255 * (1-iteration/iterations)]
+    img = smp.toimage( data )       # Create a PIL image
+    img.save('out.bmp')
+    img.show()
+
+draw_search_space()
