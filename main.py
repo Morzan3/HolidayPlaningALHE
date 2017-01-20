@@ -42,7 +42,7 @@ class HistoricDataGenerator:
     def assing_cities(self, year_number):
         unique_names = set()
         while len(unique_names) != NUMBER_OF_CITIES:
-            unique_names.add(fakeFactory.city())
+            unique_names.add(fakeFactory.city() + str(randint(1, 100)))
         for name in unique_names:
             self.city_historic_days[name] = self.populate_days_with_random_data(year_number)
 
@@ -155,6 +155,9 @@ class UrlopPlaner():
     def q(self, coordinates, wi):
         day_number, destination = coordinates
         all_days = self.search_space[destination][day_number: day_number + self.vacation_period]
+        if day_number + self.vacation_period > 364:
+            all_days = self.search_space[destination][day_number:]
+            all_days += self.search_space[destination][0:(day_number + self.vacation_period) % 364]
 
         period_weather_factor = self.calculate_sum(all_days)
 
@@ -242,14 +245,17 @@ def A():
     """ A) Różne stałe wartości parametru temperatury. """
     axisX = []
     axisY = []
-    for temp_gen in range(1,100,10):
-        qmax = urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(1000), 0.3, 10.0)
+    for temp_gen in range(1, 100, 10):
+        qmax = 0
+        for x in range(1, 100):
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(1000), 0.3, 10.0)
+        qmax /= 10.0
         axisX.append(temp_gen)
         axisY.append(qmax)
-
     plt.plot(axisX, axisY, 'ro')
     plt.show()
 
+A()
 
 def B():
     """ B) Różne funkcje definiujące wartości temperatury zmiennej w czasie. """
@@ -262,6 +268,7 @@ def B():
 
     def iter_divided_by_max(iter):
         return (iter+1)/1000
+
     temp_functions = [square_function, sin_func, iter_divided_by_max]
     axisX = []
     axisY = []
