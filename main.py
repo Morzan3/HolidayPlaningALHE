@@ -253,9 +253,10 @@ def A():
         axisX.append(temp_gen)
         axisY.append(qmax)
     plt.plot(axisX, axisY, 'ro')
+    plt.ylabel('q')
+    plt.xlabel('temperature')
     plt.show()
 
-A()
 
 def B():
     """ B) Różne funkcje definiujące wartości temperatury zmiennej w czasie. """
@@ -301,7 +302,7 @@ def D():
     """ D) Czas optymalizacji w zależności od długości planowanego urlopu. """
     axisX = []
     axisY = []
-    for test in range(1,100,10):
+    for test in range(1, 100, 10):
         urlopPlanes = UrlopPlaner(search_space, test)
         start = time.clock()
         qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
