@@ -1,8 +1,11 @@
 from faker import Factory
 from random import randint, random, gauss
 import math
+import time
+import matplotlib.pyplot as plt
 
-NUMBER_OF_CITIES = 40
+
+NUMBER_OF_CITIES = 365
 NUMBER_OF_YEARS = 10
 
 fakeFactory = Factory.create()
@@ -26,7 +29,6 @@ def get_cities_prices(city_list):
 
 class HistoricDataGenerator:
     def __init__(self, year_number):
-        w, h = 365, year_number
         self.city_historic_days = {}
         self.years = year_number
         self.assing_cities(year_number)
@@ -78,8 +80,6 @@ class DataPreprocesor():
         self.city_list = city_list
         self.city_price_list = city_price_list
         self.year_flights = year_flights
-        # self.calculate_wheather_factor()
-        # self.predict_city_wheather()
         self.generate_search_space()
 
     def generate_search_space(self):
@@ -101,12 +101,11 @@ class DataPreprocesor():
 
 
 class UrlopPlaner():
-    def __init__(self, search_space, temperature, weather_importance, vacation_period):
+    def __init__(self, search_space, vacation_period):
         self.search_space = search_space
-        self.temperature = temperature
-        self.weather_importance = weather_importance
         self.vacation_period = vacation_period
         self.city_list = list(self.search_space.keys())
+        self.history = []
 
     def calculate_sum(self, all_days):
         days_values = []
@@ -144,15 +143,10 @@ class UrlopPlaner():
 
         return wheather_value
 
-    def stopCondition(self, current_iteration):
-        if current_iteration == 1000:
-            return True
-        return False
-
     def bad_pointy_acceptance_probability(self, current_temprature, qX, qY):
         return math.exp(-abs((qY - qX) / current_temprature))
 
-    def q(self, coordinates):
+    def q(self, coordinates, wi):
         day_number, destination = coordinates
         all_days = self.search_space[destination][day_number: day_number + self.vacation_period]
 
@@ -160,7 +154,7 @@ class UrlopPlaner():
 
         objective_function = 1 / ((all_days[0].flight_price_to + all_days[-1].flight_price_from + (
         self.vacation_period * all_days[0].sleeping_price)) * (
-                                  1 + ((self.weather_importance / self.vacation_period) * period_weather_factor)))
+                                  1 + ((wi / self.vacation_period) * period_weather_factor)))
         return objective_function
 
     def select_neighbour(self, current_point, sigma):
@@ -175,35 +169,143 @@ class UrlopPlaner():
 
         return new_day, self.city_list[new_city_idx]
 
-    def simulated_annealing(self):
+    def simulated_annealing(self, temp_generator, stop_condition, weather_importance, sigma):
+        wi = weather_importance
+        history = []
         current_iteration = 1
-        beginning_temp = self.temperature
-        current_temperature = self.temperature
+        beginning_temp = temp_generator(0)
+        current_temperature = beginning_temp
         random_day = randint(0, 365)
         random_city = self.city_list[randint(0, len(self.city_list) - 1)]
 
         current_point = (random_day, random_city)
-        while not self.stopCondition(current_iteration):
-            neighbour = self.select_neighbour(current_point, 10.0)
-            if not neighbour:
-                print("test")
-            qX = self.q(current_point)
-            qY = self.q(neighbour)
+        while not stop_condition(current_iteration):
+            neighbour = self.select_neighbour(current_point, sigma)
+            qX = self.q(current_point, wi)
+            qY = self.q(neighbour, wi)
             if qX < qY:
                 current_point = neighbour
             elif random() < self.bad_pointy_acceptance_probability(current_temperature, qX, qY):
                 current_point = neighbour
-            print(neighbour)
             current_iteration += 1
-            current_temperature = beginning_temp / current_iteration
+            current_temperature = temp_generator(current_iteration)
+
+        return self.q(current_point, wi)
 
 
+"""Data initialization"""
 historicData = HistoricDataGenerator(NUMBER_OF_YEARS)
 flightGenerator = CurrentFlightGenerator(historicData.get_city_list())
 year_flights = flightGenerator.generate_flights()
 
 dataPreprocesor = DataPreprocesor(historicData.city_historic_days, year_flights, historicData.get_city_list(),
                                   get_cities_prices(historicData.get_city_list()), NUMBER_OF_YEARS)
+search_space = dataPreprocesor.generate_search_space()
 
-urlopPlanes = UrlopPlaner(dataPreprocesor.generate_search_space(), 100, 0.3, 6)
-urlopPlanes.simulated_annealing()
+urlopPlanes = UrlopPlaner(search_space, 6)
+
+"""Helpers"""
+
+
+def const_temp_gen(const):
+    def const_temp(inter):
+        return const
+    return const_temp
+
+
+def iter_stop_condition_gen(max):
+    def fun(iter):
+        if iter == max:
+            return True
+        return False
+    return fun
+
+
+def timed_stop_condition_gen(seconds):
+    start = time.clock()
+
+    def fun(iter):
+        if time.clock() > seconds + start:
+            return True
+        return False
+    return fun
+
+
+def A():
+    """ A) Różne stałe wartości parametru temperatury. """
+    axisX = []
+    axisY = []
+    for temp_gen in range(1,100,10):
+        qmax = urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(1000), 0.3, 10.0)
+        axisX.append(temp_gen)
+        axisY.append(qmax)
+
+    plt.plot(axisX, axisY, 'ro')
+    plt.show()
+
+
+def B():
+    """ B) Różne funkcje definiujące wartości temperatury zmiennej w czasie. """
+    """Temp cannot be 0"""
+    def square_function(iter):
+        return (iter*iter) * 0.03 + iter * 0.3 + 1
+
+    def sin_func(iter):
+        return math.sin((iter+1)/100)
+
+    def iter_divided_by_max(iter):
+        return (iter+1)/1000
+    temp_functions = [square_function, sin_func, iter_divided_by_max]
+    axisX = []
+    axisY = []
+    xticks = []
+    for temp_function in temp_functions:
+        qmax = urlopPlanes.simulated_annealing(temp_function, iter_stop_condition_gen(1000), 0.3, 10.0)
+        axisX.append(qmax)
+        axisY.append(qmax)
+        xticks.append(temp_function.__name__)
+    plt.xticks(axisX, xticks)
+    plt.plot(axisX, axisY)
+    plt.show()
+
+
+def C():
+    """ C) Różne wartości współczynnika udziału pogody. """
+    axisX = []
+    axisY = []
+    for wi in range(1, 10):
+        start = time.clock()
+        qmax = urlopPlanes.simulated_annealing(const_temp_gen(1000), iter_stop_condition_gen(1000), wi, 10.0)
+        total = time.clock() - start
+        axisX.append(wi)
+        axisY.append(qmax)
+    plt.plot(axisX, axisY, 'ro')
+    plt.show()
+
+
+def D():
+    """ D) Czas optymalizacji w zależności od długości planowanego urlopu. """
+    axisX = []
+    axisY = []
+    for test in range(1,100,10):
+        urlopPlanes = UrlopPlaner(search_space, test)
+        start = time.clock()
+        qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
+        total = time.clock() - start
+        axisX.append(test)
+        axisY.append(total)
+    plt.plot(axisX, axisY, 'ro')
+    plt.show()
+
+
+def E():
+    """E) Jakość optymalizacji w zależności od długości planowanego urlopu."""
+    axisX = []
+    axisY = []
+    for test in range(1, 100, 10):
+        urlopPlanes = UrlopPlaner(search_space, test)
+        qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
+        axisX.append(test)
+        axisY.append(qmax)
+    plt.plot(axisX, axisY, 'ro')
+    plt.show()
