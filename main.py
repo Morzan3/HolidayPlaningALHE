@@ -359,24 +359,33 @@ def E():
     plt.show()
 
 
-def draw_search_space():
-    # Create a 1024x1024x3 array of 8 bit unsigned integers
-    data = np.zeros( (NUMBER_OF_CITIES, 365, 3), dtype=np.uint8)
+def draw_search_space(sigma, iterations, output):
+
+    def one_divided_by_iter(iter):
+        value = 1/(iter+1)
+        if value != 0:
+            return value
+        return 0.000001
+
+    data = np.zeros((NUMBER_OF_CITIES, 365, 3), dtype=np.uint8)
     data.fill(255)
-    iterations = 100000.0;
-    urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(iterations), 0.3, 1000.0)
+    urlopPlanes.simulated_annealing(one_divided_by_iter, iter_stop_condition_gen(iterations), 0.3, sigma)
     history = urlopPlanes.history
     for point, iteration in history:
         day, city = point
         city_idx = urlopPlanes.city_list.index(city)
         data[day, city_idx] = [255.0*(iteration/iterations), 0, 255 * (1-iteration/iterations)]
-    img = smp.toimage( data )       # Create a PIL image
-    img.save('out.bmp')
+    img = smp.toimage(data)
+    img.save(output)
     img.show()
-
 
 A()
 B()
 C()
 D()
 E()
+
+iterations = 100000.0
+draw_search_space(1, iterations, "sigma1.bmp")
+draw_search_space(10, iterations, "sigma10.bmp")
+draw_search_space(100, iterations, "sigma100.bmp")
