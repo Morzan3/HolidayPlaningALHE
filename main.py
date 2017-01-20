@@ -263,16 +263,25 @@ def A():
 def B():
     """ B) Różne funkcje definiujące wartości temperatury zmiennej w czasie. """
     def square_function(iter):
-        return (iter*iter) * 0.03 + iter * 0.3 + 1
+        value = -0.03 * (iter*iter) + iter * 0.3 + 1
+        if value != 0:
+            return value
+        return 0.000001
 
     def sin_func(iter):
-        return math.sin((iter+1)/100)
+        value = math.sin((iter+1)/100)
+        if value != 0:
+            return value
+        return 0.000001
 
-    def iter_divided_by_max(iter):
-        return (iter+1)/1000
+    def one_divided_by_iter(iter):
+        value = 1/(iter+1)
+        if value != 0:
+            return value
+        return 0.000001
 
 
-    temp_functions = [square_function, sin_func, iter_divided_by_max]
+    temp_functions = [square_function, sin_func, one_divided_by_iter]
     axisX = []
     axisY = []
     xticks = []
@@ -290,6 +299,7 @@ def B():
     plt.ylabel('q')
     plt.show()
 
+B()
 
 def C():
     """ C) Różne wartości współczynnika udziału pogody. """
@@ -307,6 +317,7 @@ def C():
     plt.xlabel('wi')
     plt.ylabel('q')
     plt.show()
+
 
 def D():
     """ D) Czas optymalizacji w zależności od długości planowanego urlopu. """
@@ -346,7 +357,7 @@ def E():
     plt.ylabel('qmax')
     plt.show()
 
-
+E()
 def draw_search_space():
     # Create a 1024x1024x3 array of 8 bit unsigned integers
     data = np.zeros( (NUMBER_OF_CITIES, 365, 3), dtype=np.uint8)
