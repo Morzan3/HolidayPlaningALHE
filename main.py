@@ -160,10 +160,13 @@ class UrlopPlaner():
             all_days += self.search_space[destination][0:(day_number + self.vacation_period) % 364]
 
         period_weather_factor = self.calculate_sum(all_days)
+        weather_part  = (wi / self.vacation_period) * period_weather_factor
+        if weather_part == -1:
+            weather_part = -0.999999
 
         objective_function = 1 / ((all_days[0].flight_price_to + all_days[-1].flight_price_from + (
         self.vacation_period * all_days[0].sleeping_price)) * (
-                                  1 + ((wi / self.vacation_period) * period_weather_factor)))
+                                  1 + (weather_part)))
         return objective_function
 
     def select_neighbour(self, current_point, sigma):
@@ -247,9 +250,9 @@ def A():
     axisY = []
     for temp_gen in range(1, 100, 10):
         qmax = 0
-        for x in range(1, 100):
-            qmax += urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(1000), 0.3, 10.0)
-        qmax /= 10.0
+        for x in range(1, 20):
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(100000), 0.3, 10.0)
+        qmax /= 100.0
         axisX.append(temp_gen)
         axisY.append(qmax)
     plt.plot(axisX, axisY, 'ro')
@@ -257,10 +260,8 @@ def A():
     plt.xlabel('temperature')
     plt.show()
 
-
 def B():
     """ B) Różne funkcje definiujące wartości temperatury zmiennej w czasie. """
-    """Temp cannot be 0"""
     def square_function(iter):
         return (iter*iter) * 0.03 + iter * 0.3 + 1
 
@@ -270,17 +271,23 @@ def B():
     def iter_divided_by_max(iter):
         return (iter+1)/1000
 
+
     temp_functions = [square_function, sin_func, iter_divided_by_max]
     axisX = []
     axisY = []
     xticks = []
     for temp_function in temp_functions:
-        qmax = urlopPlanes.simulated_annealing(temp_function, iter_stop_condition_gen(1000), 0.3, 10.0)
-        axisX.append(qmax)
+        qmax = 0
+        iter = 10
+        for x in range(1, iter):
+            qmax += urlopPlanes.simulated_annealing(temp_function, iter_stop_condition_gen(1000), 0.3, 10.0)
+        axisX.append(qmax/iter)
         axisY.append(qmax)
         xticks.append(temp_function.__name__)
     plt.xticks(axisX, xticks)
     plt.plot(axisX, axisY)
+    plt.xlabel('function')
+    plt.ylabel('q')
     plt.show()
 
 
@@ -289,14 +296,17 @@ def C():
     axisX = []
     axisY = []
     for wi in range(1, 10):
-        start = time.clock()
-        qmax = urlopPlanes.simulated_annealing(const_temp_gen(1000), iter_stop_condition_gen(1000), wi, 10.0)
-        total = time.clock() - start
+        iter = 10
+        qmax = 0
+        for x in range(1, iter):
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(1000), iter_stop_condition_gen(1000), wi, 10.0)
+        axisY.append(qmax/iter)
         axisX.append(wi)
-        axisY.append(qmax)
     plt.plot(axisX, axisY, 'ro')
-    plt.show()
 
+    plt.xlabel('wi')
+    plt.ylabel('q')
+    plt.show()
 
 def D():
     """ D) Czas optymalizacji w zależności od długości planowanego urlopu. """
@@ -304,12 +314,17 @@ def D():
     axisY = []
     for test in range(1, 100, 10):
         urlopPlanes = UrlopPlaner(search_space, test)
-        start = time.clock()
-        qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
-        total = time.clock() - start
+        iter = 10
+        total = 0
+        for x in range(1, iter):
+            start = time.clock()
+            qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
+            total += time.clock() - start
         axisX.append(test)
-        axisY.append(total)
+        axisY.append(total/iter)
     plt.plot(axisX, axisY, 'ro')
+    plt.xlabel('vacation period')
+    plt.ylabel('time')
     plt.show()
 
 
@@ -319,10 +334,16 @@ def E():
     axisY = []
     for test in range(1, 100, 10):
         urlopPlanes = UrlopPlaner(search_space, test)
-        qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
+        intr = 10
+        qmax = 0
+        for x in range(1, 10):
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
         axisX.append(test)
-        axisY.append(qmax)
+        axisY.append(qmax/iter)
     plt.plot(axisX, axisY, 'ro')
+    plt.plot(axisX, axisY, 'ro')
+    plt.xlabel('vacation period')
+    plt.ylabel('qmax')
     plt.show()
 
 
@@ -331,7 +352,7 @@ def draw_search_space():
     data = np.zeros( (NUMBER_OF_CITIES, 365, 3), dtype=np.uint8)
     data.fill(255)
     iterations = 100000.0;
-    urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(iterations), 0.3, 10.0)
+    urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(iterations), 0.3, 1000.0)
     history = urlopPlanes.history
     for point, iteration in history:
         day, city = point
