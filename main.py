@@ -250,13 +250,13 @@ def A():
     axisY = []
     for temp_gen in range(1, 100, 10):
         qmax = 0
-        for x in range(1, 20):
-            qmax += urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(100000), 0.3, 10.0)
+        for x in range(1, 100):
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(temp_gen), iter_stop_condition_gen(10000), 0.3, 10.0)
         qmax /= 100.0
         axisX.append(temp_gen)
         axisY.append(qmax)
     plt.plot(axisX, axisY, 'ro')
-    plt.ylabel('q')
+    plt.ylabel('avarage point quality')
     plt.xlabel('temperature')
     plt.show()
 
@@ -285,37 +285,38 @@ def B():
     axisX = []
     axisY = []
     xticks = []
-    for temp_function in temp_functions:
+    for index, temp_function in enumerate(temp_functions):
         qmax = 0
-        iter = 10
+        iter = 100
         for x in range(1, iter):
-            qmax += urlopPlanes.simulated_annealing(temp_function, iter_stop_condition_gen(1000), 0.3, 10.0)
-        axisX.append(qmax/iter)
-        axisY.append(qmax)
+            qmax += urlopPlanes.simulated_annealing(temp_function, iter_stop_condition_gen(10000), 0.3, 10.0)
+        axisX.append(index)
+        axisY.append(qmax/iter)
         xticks.append(temp_function.__name__)
     plt.xticks(axisX, xticks)
+    plt.scatter(axisX, axisY)
+
     plt.plot(axisX, axisY)
     plt.xlabel('function')
-    plt.ylabel('q')
+    plt.ylabel('avarage point quality')
     plt.show()
 
-B()
 
 def C():
     """ C) Różne wartości współczynnika udziału pogody. """
     axisX = []
     axisY = []
-    for wi in range(1, 10):
-        iter = 10
+    for wi in [ 0.0,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9]:
+        iter = 100
         qmax = 0
         for x in range(1, iter):
-            qmax += urlopPlanes.simulated_annealing(const_temp_gen(1000), iter_stop_condition_gen(1000), wi, 10.0)
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(1000), iter_stop_condition_gen(10000), wi, 10.0)
         axisY.append(qmax/iter)
         axisX.append(wi)
     plt.plot(axisX, axisY, 'ro')
 
     plt.xlabel('wi')
-    plt.ylabel('q')
+    plt.ylabel('avarage point quality')
     plt.show()
 
 
@@ -325,11 +326,11 @@ def D():
     axisY = []
     for test in range(1, 100, 10):
         urlopPlanes = UrlopPlaner(search_space, test)
-        iter = 10
+        iter = 100
         total = 0
         for x in range(1, iter):
             start = time.clock()
-            qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
+            qmax = urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(10000), 0.3, 10.0)
             total += time.clock() - start
         axisX.append(test)
         axisY.append(total/iter)
@@ -345,10 +346,10 @@ def E():
     axisY = []
     for test in range(1, 100, 10):
         urlopPlanes = UrlopPlaner(search_space, test)
-        intr = 10
+        iter = 100
         qmax = 0
-        for x in range(1, 10):
-            qmax += urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(100), 0.3, 10.0)
+        for x in range(1, iter):
+            qmax += urlopPlanes.simulated_annealing(const_temp_gen(10), iter_stop_condition_gen(10000), 0.3, 10.0)
         axisX.append(test)
         axisY.append(qmax/iter)
     plt.plot(axisX, axisY, 'ro')
@@ -357,7 +358,7 @@ def E():
     plt.ylabel('qmax')
     plt.show()
 
-E()
+
 def draw_search_space():
     # Create a 1024x1024x3 array of 8 bit unsigned integers
     data = np.zeros( (NUMBER_OF_CITIES, 365, 3), dtype=np.uint8)
@@ -373,4 +374,9 @@ def draw_search_space():
     img.save('out.bmp')
     img.show()
 
-draw_search_space()
+
+A()
+B()
+C()
+D()
+E()
