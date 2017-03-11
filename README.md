@@ -24,7 +24,7 @@ E) Quality of optimization depending on length of the holiday.
 ## Getting Started
 
 ```
-$ git clone https://github.com/Morzan3/HolidayPlaningALHE/blob/master/main.py
+$ git clone https://github.com/Morzan3/HolidayPlaningALHE
 $ cd HolidayPlaningALHE
 ```
 
